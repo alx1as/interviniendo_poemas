@@ -1,5 +1,6 @@
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "./TextoEnConstruccion.css";
+import { optimizarImagen } from "../utils/optimizarImagen";
 
 export default function TextoEnConstruccion({
   lineas,
@@ -8,13 +9,10 @@ export default function TextoEnConstruccion({
   imagenURL,
   setImagen,
   setImagenURL,
-  handleImagen,
+  handleImagen,        // viene desde afuera, no lo pisamos
   handleImagenLink,
 }) {
 
-  // ─────────────────────────────────────────────
-  // A) Barra de herramientas
-  // ─────────────────────────────────────────────
   function aplicarFormato(tag) {
     const textarea = document.getElementById("editor-poema");
     const start = textarea.selectionStart;
@@ -33,17 +31,11 @@ export default function TextoEnConstruccion({
     setTimeout(() => textarea.focus(), 0);
   }
 
-  // ─────────────────────────────────────────────
-  // B) Editar textarea grande
-  // ─────────────────────────────────────────────
   function handleTextarea(e) {
     const nuevas = e.target.value.split("\n");
     onEditarLineas(nuevas);
   }
 
-  // ─────────────────────────────────────────────
-  // C) Drag & drop
-  // ─────────────────────────────────────────────
   function handleDrag(result) {
     if (!result.destination) return;
 
@@ -54,33 +46,28 @@ export default function TextoEnConstruccion({
     onEditarLineas(nuevas);
   }
 
+  // ✔ Handler interno, NO pisa el que viene por props
+  async function handleImagenOptimizada(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const optimizada = await optimizarImagen(file);
+    setImagen(URL.createObjectURL(optimizada));
+
+    // Si querés enviar al back después:
+    if (handleImagen) handleImagen(optimizada);
+  }
+
   return (
     <div className="texto-contenedor">
       <h3>Poema en construcción</h3>
 
-      {/* ───────────────────────────────────────── */}
-      {/* Toolbar */}
-      {/* ───────────────────────────────────────── */}
       <div className="toolbar">
-        <button onClick={() => aplicarFormato("b")} style={{ fontWeight: "bold" }}>
-          N
-        </button>
-
-        <button onClick={() => aplicarFormato("i")} style={{ fontStyle: "italic" }}>
-          C
-        </button>
-
-        <button
-          onClick={() => aplicarFormato("u")}
-          style={{ textDecoration: "underline" }}
-        >
-          S
-        </button>
+        <button onClick={() => aplicarFormato("b")} style={{ fontWeight: "bold" }}>N</button>
+        <button onClick={() => aplicarFormato("i")} style={{ fontStyle: "italic" }}>C</button>
+        <button onClick={() => aplicarFormato("u")} style={{ textDecoration: "underline" }}>S</button>
       </div>
 
-      {/* ───────────────────────────────────────── */}
-      {/* TEXTAREA PRINCIPAL */}
-      {/* ───────────────────────────────────────── */}
       <textarea
         id="editor-poema"
         className="texto-total"
@@ -89,11 +76,8 @@ export default function TextoEnConstruccion({
         placeholder="Tu poema aparecerá aquí…"
       />
 
-      {/* ───────────────────────────────────────── */}
-      {/* CARGA DE IMAGEN — AHORA EN EL LUGAR CORRECTO */}
-      {/* ───────────────────────────────────────── */}
+      {/* ─ CARGA DE IMAGEN ─ */}
       <div style={{ marginTop: "15px" }}>
-        {/* Cargar desde archivo */}
         <label htmlFor="archivo-intervenir" className="escribir-boton-archivo">
           Cargar imagen
         </label>
@@ -102,11 +86,11 @@ export default function TextoEnConstruccion({
           id="archivo-intervenir"
           type="file"
           accept="image/*"
-          onChange={handleImagen}
+          onChange={handleImagenOptimizada}   // ← usa la optimización interna
           className="escribir-input-archivo"
         />
 
-        {/* Cargar desde link */}
+        {/* LINK */}
         <div style={{ marginTop: "10px", display: "flex", gap: "8px" }}>
           <input
             type="text"
@@ -121,15 +105,12 @@ export default function TextoEnConstruccion({
             }}
           />
 
-          <button
-            onClick={handleImagenLink}
-            className="escribir-boton-archivo"
-          >
+          <button onClick={handleImagenLink} className="escribir-boton-archivo">
             Usar link
           </button>
         </div>
 
-        {/* Previsualización */}
+        {/* PREVIEW única */}
         {imagen && (
           <img
             src={imagen}
@@ -144,9 +125,6 @@ export default function TextoEnConstruccion({
         )}
       </div>
 
-      {/* ───────────────────────────────────────── */}
-      {/* LÍNEAS ARRASTRABLES */}
-      {/* ───────────────────────────────────────── */}
       {lineas.length > 0 && (
         <div className="texto-lista">
           <DragDropContext onDragEnd={handleDrag}>

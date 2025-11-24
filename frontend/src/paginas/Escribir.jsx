@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { usePoemas } from "../contexto/PoemasContexto";
 import { useAuth } from "../contexto/AuthContexto";
+import { optimizarImagen } from "../utils/optimizarImagen";
 import "./Escribir.css";
 
 export default function Escribir() {
@@ -11,9 +12,7 @@ export default function Escribir() {
   const [fuente, setFuente] = useState("serif");
   const [imagen, setImagen] = useState(null);
 
-  // ─────────────────────────────────────────────
   // FORMATO
-  // ─────────────────────────────────────────────
   function aplicarFormato(tag) {
     const textarea = document.getElementById("editor-escribir");
     const start = textarea.selectionStart;
@@ -31,42 +30,41 @@ export default function Escribir() {
     setTimeout(() => textarea.focus(), 0);
   }
 
-  // ─────────────────────────────────────────────
-  // IMAGEN
-  // ─────────────────────────────────────────────
-  function handleImagen(e) {
+  // IMAGEN (OPTIMIZADA + BASE64 → igual que antes)
+  async function handleImagen(e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 1) optimizar archivo (reduce peso y tamaño)
+    const optimizada = await optimizarImagen(file);
+
+    // 2) convertir a base64 como vos ya hacías
     const reader = new FileReader();
     reader.onload = () => setImagen(reader.result);
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(optimizada);
   }
 
-  // ─────────────────────────────────────────────
   // GUARDAR
-  // ─────────────────────────────────────────────
   function guardar() {
-  if (!texto.trim()) return;
+    if (!texto.trim()) return;
 
-  guardarPoema({
-    autora: usuario?.nombre || "Anónima",
-    etiqueta: "Texto propio",
-    lineas: texto.split("\n").map((l) => l.trim()),
-    imagen: imagen || null   // ⬅️ AGREGADO
-  });
+    guardarPoema({
+      autora: usuario?.nombre || "Anónima",
+      etiqueta: "Texto propio",
+      lineas: texto.split("\n").map((l) => l.trim()),
+      imagen: imagen || null   // mantiene tu sistema actual
+    });
 
-  setTexto("");
-  setImagen(null);
-  alert("Texto guardado ✔");
-}
-
+    setTexto("");
+    setImagen(null);
+    alert("Texto guardado ✔");
+  }
 
   return (
     <div className="escribir-contenedor">
       <h2>Escribir</h2>
 
-      {/* IMAGEN */}
+      {/* PREVIEW */}
       {imagen && (
         <img
           src={imagen}
@@ -76,40 +74,28 @@ export default function Escribir() {
       )}
 
       <div style={{ marginBottom: "15px", display: "flex", alignItems: "center", gap: "12px" }}>
-  <label htmlFor="archivo-imagen" className="escribir-boton-archivo">
-    Seleccionar imagen
-  </label>
+        <label htmlFor="archivo-imagen" className="escribir-boton-archivo">
+          Seleccionar imagen
+        </label>
 
-  <input
-    id="archivo-imagen"
-    type="file"
-    accept="image/*"
-    onChange={handleImagen}
-    className="escribir-input-archivo"
-  />
+        <input
+          id="archivo-imagen"
+          type="file"
+          accept="image/*"
+          onChange={handleImagen}
+          className="escribir-input-archivo"
+        />
 
-  <span className="escribir-nombre-archivo">
-    {imagen ? "Imagen cargada ✓" : "Sin imagen"}
-  </span>
-</div>
-
+        <span className="escribir-nombre-archivo">
+          {imagen ? "Imagen cargada ✓" : "Sin imagen"}
+        </span>
+      </div>
 
       {/* Barra formato */}
       <div className="escribir-toolbar">
-        <button onClick={() => aplicarFormato("b")} style={{ fontWeight: "bold" }}>
-          N
-        </button>
-
-        <button onClick={() => aplicarFormato("i")} style={{ fontStyle: "italic" }}>
-          C
-        </button>
-
-        <button
-          onClick={() => aplicarFormato("u")}
-          style={{ textDecoration: "underline" }}
-        >
-          S
-        </button>
+        <button onClick={() => aplicarFormato("b")} style={{ fontWeight: "bold" }}>N</button>
+        <button onClick={() => aplicarFormato("i")} style={{ fontStyle: "italic" }}>C</button>
+        <button onClick={() => aplicarFormato("u")} style={{ textDecoration: "underline" }}>S</button>
 
         <select
           value={fuente}
