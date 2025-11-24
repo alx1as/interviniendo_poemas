@@ -23,17 +23,16 @@ from rutas.usuarios import usuarios_bp
 from rutas.comentarios import comentarios_bp
 from rutas.cadaver_db import cadaver_db_bp
 
-app.register_blueprint(cadaver_db_bp, url_prefix="/api")
-
-# Crear tablas
-with app.app_context():
-    db.create_all()
-
 # Registrar blueprints
+app.register_blueprint(cadaver_db_bp, url_prefix="/api")
 app.register_blueprint(poemas_bp, url_prefix="/api")
 app.register_blueprint(cadaver_bp, url_prefix="/api")
 app.register_blueprint(usuarios_bp, url_prefix="/api")
 app.register_blueprint(comentarios_bp, url_prefix="/api")
 
+# Crear tablas
+with app.app_context():
+    db.create_all()
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
